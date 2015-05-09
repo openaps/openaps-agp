@@ -1,4 +1,9 @@
 import dateutil.parser
+from scipy import stats
+from scipy.stats import norm
+from numpy import percentile
+import math
+
 values = []
 hour_buckets = {}
 for hour in range(0,24):
@@ -12,16 +17,17 @@ with open("glucose.txt") as f:
 		if (glucose >= 39):
 			values.append((datetime, glucose, trend))
 			bucket = hour_buckets.get(datetime.hour, [])
-			bucket.append(glucose)
+			bucket.append((datetime, glucose))
+
 def agp(bucket):
-	vals_sorted = sorted(bucket)
-	#print vals_sorted
-	percentile_10 = vals_sorted[int(len(vals_sorted)*.1)]
-	median = vals_sorted[int(len(vals_sorted)/2)]
-	percentile_25 = vals_sorted[int(len(vals_sorted)*.25)]
-	percentile_75 = vals_sorted[int(len(vals_sorted)*.75)]
-	percentile_90 = vals_sorted[int(len(vals_sorted)*.9)]
-	return (percentile_10, percentile_25, median, percentile_75, percentile_90)
+	subbuckets = [[] for x in range(0,60,5)]
+	for (time, glucose) in bucket:
+		subbuckets[int(math.floor(time.minute / 5))].append(glucose)
+	agps = [percentile(subbucket, [10,25,50,75,90]) for subbucket in subbuckets]
+	return agps
 
 for hour in range(0,24):
-	print hour, agp(hour_buckets[hour])
+	agps = agp(hour_buckets[hour])
+	for minute in range(0,60,5):
+		print hour, minute, agps[minute/5]
+		
