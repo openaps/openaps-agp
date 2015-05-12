@@ -3,10 +3,16 @@ AGP - calculate agp values given some glucose text
 """
 
 import dateutil.parser
+from scipy import stats
+from scipy.stats import norm
+from numpy import percentile
+import math
+
 class AGP (object):
   """
   The actual calculator.
   """
+
   def __init__ (self):
     # init empty values
     self.values = []
@@ -15,6 +21,7 @@ class AGP (object):
     # initialize all buckets with empty list
     for hour in range(0,24):
       self.hour_buckets[hour] = []
+
   def add_record (self, record):
     """ Add record to global list and assign to bucket
     """
@@ -30,33 +37,30 @@ class AGP (object):
       self.values.append((datetime, glucose, trend))
       # assign to bucket
       bucket = self.hour_buckets.get(datetime.hour, [])
-      bucket.append(glucose)
+      bucket.append((datetime, glucose))
+
   # process data and return new agp stats
   def __call__ (self, data):
-    stats = [ ]
+    out = [ ]
     # add all records
     for record in data:
       self.add_record(record)
-    # calculate for stats each hour of day
+
+    # calculate for out each hour of day
+
     for hour in range(0,24):
-      stats.append((hour, calc_agp(self.hour_buckets[hour])))
-    return stats
+      agps = calc_agp(self.hour_buckets[hour])
+      for minute in range(0,60,5):
+        out.append((hour, minute, agps[minute/5]))
+    return out
 
 def calc_agp (bucket):
-  vals_sorted = sorted(bucket)
-  # print vals_sorted, bucket
-  percentile_10 = []
-  median = []
-  percentile_25 = []
-  percentile_75 = []
-  percentile_90 = []
-  if len(vals_sorted) > 0:
-    percentile_10 = vals_sorted[int(len(vals_sorted)*.1)]
-    median = vals_sorted[int(len(vals_sorted)/2)]
-    percentile_25 = vals_sorted[int(len(vals_sorted)*.25)]
-    percentile_75 = vals_sorted[int(len(vals_sorted)*.75)]
-    percentile_90 = vals_sorted[int(len(vals_sorted)*.9)]
-  return (percentile_10, percentile_25, median, percentile_75, percentile_90)
+  subbuckets = [[] for x in range(0,60,5)]
+  for (time, glucose) in bucket:
+    subbuckets[int(math.floor(time.minute / 5))].append(glucose)
+  agps = [percentile(subbucket, [10,25,50,75,90]) for subbucket in subbuckets]
+  return agps
+
 
 
 # The remainder is for debugging and testing purposes.
@@ -67,6 +71,6 @@ def calc_agp (bucket):
 if __name__ == '__main__':
   parser = AGP( )
   with open("glucose.txt") as f:
-    for hour, vals in parser(f.readlines()):
-      print hour, vals
+    for hour, minute, vals in parser(f.readlines()):
+      print hour, minute, vals
 

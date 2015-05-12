@@ -8,7 +8,7 @@ plugin.
 
 '''
 
-requires = ['openaps>=0.0.0']
+requires = ['openaps>=0.0.0', 'scipy', 'numpy']
 
 setup(
     name='openapscontrib.agp',

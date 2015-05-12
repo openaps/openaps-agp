@@ -1,3 +1,6 @@
+"""
+AGP - calculate agp values given some glucose text
+"""
 
 ##########################################
 #
@@ -29,6 +32,13 @@ class calculate (Use):
     """
     # get file based argument called input.
     parser.add_argument('input', default='glucose.txt')
+
+  def prerender_text (self, data):
+    out = [ ]
+    for hour, minute, vals in data:
+      out.append(' '.join(map(str, [hour, minute, ','.join(map(str, vals))])))
+      # print hour, minute, vals
+    return "\n".join(out)
 
   # main logic for the app
   def main (self, args, app):
