@@ -13,8 +13,9 @@ class AGP (object):
   The actual calculator.
   """
 
-  def __init__ (self):
+  def __init__ (self, json=False):
     # init empty values
+    self.json = json
     self.values = []
     # and empty buckets
     self.hour_buckets = {}
@@ -22,11 +23,15 @@ class AGP (object):
     for hour in range(0,24):
       self.hour_buckets[hour] = []
 
+  def check (self, record):
+    if self.json:
+      return (record.get('display_time'), record.get('glucose'), record.get('trend_arrow'))
+    return record.strip().split()
   def add_record (self, record):
     """ Add record to global list and assign to bucket
     """
     # clean/prep the record
-    (time, glucose, trend) = record.strip().split()
+    (time, glucose, trend) = self.check(record)
     # get a proper datetime object
     datetime = dateutil.parser.parse(time)
     glucose = int(glucose)
